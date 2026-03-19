@@ -1,5 +1,5 @@
 name: Grafana Alloy
-version: "1.2.2"
+version: "1.2.3"
 slug: alloy
 description: >-
   Ship Home Assistant logs to Loki using Grafana Alloy.
@@ -36,7 +36,7 @@ schema:
   tls_client_cert: "str?"
   tls_client_key: "str?"
   tls_server_name: "str?"
-  extra_hosts:
+  "extra_hosts?":
     - str
 stage: experimental
 apparmor: false
