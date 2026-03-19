@@ -17,6 +17,7 @@ BASIC_AUTH_PASSWORD=$(jq -r '.basic_auth_password // ""' "${OPTIONS_FILE}")
 TLS_CA_CERT=$(jq -r '.tls_ca_cert // ""' "${OPTIONS_FILE}")
 TLS_CLIENT_CERT=$(jq -r '.tls_client_cert // ""' "${OPTIONS_FILE}")
 TLS_CLIENT_KEY=$(jq -r '.tls_client_key // ""' "${OPTIONS_FILE}")
+TLS_SERVER_NAME=$(jq -r '.tls_server_name // ""' "${OPTIONS_FILE}")
 
 # Detect journal path
 JOURNAL_PATH="/var/log/journal"
@@ -74,6 +75,10 @@ if [ "${HAS_TLS}" = true ]; then
     if [ -n "${TLS_CLIENT_KEY}" ]; then
         TLS_BLOCK="${TLS_BLOCK}
       key_file  = \"${SSL_DIR}/${TLS_CLIENT_KEY}\""
+    fi
+    if [ -n "${TLS_SERVER_NAME}" ]; then
+        TLS_BLOCK="${TLS_BLOCK}
+      server_name = \"${TLS_SERVER_NAME}\""
     fi
     TLS_BLOCK="${TLS_BLOCK}
     }"

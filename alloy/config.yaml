@@ -35,5 +35,6 @@ schema:
   tls_ca_cert: "str?"
   tls_client_cert: "str?"
   tls_client_key: "str?"
+  tls_server_name: "str?"
 stage: experimental
 apparmor: false

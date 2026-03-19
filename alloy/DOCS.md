@@ -22,6 +22,7 @@ For Loki endpoints secured with TLS or mutual TLS (client certificates). Certifi
 - **tls_ca_cert**: CA certificate filename (e.g., `ca.crt`). Use when Loki's certificate is signed by a private CA.
 - **tls_client_cert**: Client certificate filename (e.g., `client.crt`). Required for mTLS.
 - **tls_client_key**: Client key filename (e.g., `client.key`). Required for mTLS.
+- **tls_server_name**: Override the server name for TLS verification and SNI. Use when connecting by IP address but the server certificate contains a hostname (e.g., `loki-ingest.example.com`).
 
 ### Basic Auth
 
@@ -47,6 +48,18 @@ loki_url: "https://loki-ingest.example.com/loki/api/v1/push"
 tls_ca_cert: "ca.crt"
 tls_client_cert: "client.crt"
 tls_client_key: "client.key"
+```
+
+### Example: mTLS with IP address
+
+When DNS cannot resolve the Loki hostname (e.g., `.local` domain conflicts with mDNS), connect by IP and use `tls_server_name` to set the expected hostname for TLS verification and SNI routing:
+
+```yaml
+loki_url: "https://192.168.1.45/loki/api/v1/push"
+tls_ca_cert: "ca.crt"
+tls_client_cert: "client.crt"
+tls_client_key: "client.key"
+tls_server_name: "loki-ingest.example.com"
 ```
 
 ### Example: Basic Auth
