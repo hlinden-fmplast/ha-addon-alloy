@@ -4,6 +4,7 @@ set -e
 CONFIG_DIR="/etc/alloy"
 CONFIG_FILE="${CONFIG_DIR}/config.alloy"
 OPTIONS_FILE="/data/options.json"
+SSL_DIR="/ssl"
 
 mkdir -p "${CONFIG_DIR}" /data/alloy
 
@@ -11,6 +12,11 @@ mkdir -p "${CONFIG_DIR}" /data/alloy
 LOKI_URL=$(jq -r '.loki_url' "${OPTIONS_FILE}")
 LOG_LEVEL=$(jq -r '.log_level // "info"' "${OPTIONS_FILE}")
 ADDITIONAL_CONFIG=$(jq -r '.additional_config // ""' "${OPTIONS_FILE}")
+BASIC_AUTH_USER=$(jq -r '.basic_auth_user // ""' "${OPTIONS_FILE}")
+BASIC_AUTH_PASSWORD=$(jq -r '.basic_auth_password // ""' "${OPTIONS_FILE}")
+TLS_CA_CERT=$(jq -r '.tls_ca_cert // ""' "${OPTIONS_FILE}")
+TLS_CLIENT_CERT=$(jq -r '.tls_client_cert // ""' "${OPTIONS_FILE}")
+TLS_CLIENT_KEY=$(jq -r '.tls_client_key // ""' "${OPTIONS_FILE}")
 
 # Detect journal path
 JOURNAL_PATH="/var/log/journal"
@@ -18,12 +24,70 @@ if [ ! -d "${JOURNAL_PATH}" ] || [ -z "$(ls -A "${JOURNAL_PATH}" 2>/dev/null)" ]
     JOURNAL_PATH="/run/log/journal"
 fi
 
+# Validate certificate files exist
+HAS_TLS=false
+if [ -n "${TLS_CA_CERT}" ] || [ -n "${TLS_CLIENT_CERT}" ]; then
+    HAS_TLS=true
+    for cert_var in TLS_CA_CERT TLS_CLIENT_CERT TLS_CLIENT_KEY; do
+        cert_file="${!cert_var}"
+        if [ -n "${cert_file}" ] && [ ! -f "${SSL_DIR}/${cert_file}" ]; then
+            echo "ERROR: ${cert_var}=${cert_file} not found in ${SSL_DIR}/"
+            echo "Place the file in your Home Assistant /ssl/ directory."
+            exit 1
+        fi
+    done
+fi
+
+HAS_BASIC_AUTH=false
+if [ -n "${BASIC_AUTH_USER}" ]; then
+    HAS_BASIC_AUTH=true
+fi
+
+# Startup banner
 echo "-----------------------------------------------------------"
 echo " Grafana Alloy for Home Assistant"
 echo " Loki URL: ${LOKI_URL}"
 echo " Journal path: ${JOURNAL_PATH}"
 echo " Log level: ${LOG_LEVEL}"
+if [ "${HAS_TLS}" = true ]; then
+    echo " TLS: enabled (CA: ${TLS_CA_CERT:-none}, cert: ${TLS_CLIENT_CERT:-none})"
+fi
+if [ "${HAS_BASIC_AUTH}" = true ]; then
+    echo " Basic auth: enabled (user: ${BASIC_AUTH_USER})"
+fi
 echo "-----------------------------------------------------------"
+
+# Build loki.write endpoint block
+ENDPOINT_BLOCK="    url = \"${LOKI_URL}\""
+
+if [ "${HAS_TLS}" = true ]; then
+    TLS_BLOCK="
+    tls_config {"
+    if [ -n "${TLS_CA_CERT}" ]; then
+        TLS_BLOCK="${TLS_BLOCK}
+      ca_file   = \"${SSL_DIR}/${TLS_CA_CERT}\""
+    fi
+    if [ -n "${TLS_CLIENT_CERT}" ]; then
+        TLS_BLOCK="${TLS_BLOCK}
+      cert_file = \"${SSL_DIR}/${TLS_CLIENT_CERT}\""
+    fi
+    if [ -n "${TLS_CLIENT_KEY}" ]; then
+        TLS_BLOCK="${TLS_BLOCK}
+      key_file  = \"${SSL_DIR}/${TLS_CLIENT_KEY}\""
+    fi
+    TLS_BLOCK="${TLS_BLOCK}
+    }"
+    ENDPOINT_BLOCK="${ENDPOINT_BLOCK}${TLS_BLOCK}"
+fi
+
+if [ "${HAS_BASIC_AUTH}" = true ]; then
+    ENDPOINT_BLOCK="${ENDPOINT_BLOCK}
+
+    basic_auth {
+      username = \"${BASIC_AUTH_USER}\"
+      password = \"${BASIC_AUTH_PASSWORD}\"
+    }"
+fi
 
 # Generate Alloy config
 cat > "${CONFIG_FILE}" <<ALLOYCONFIG
@@ -86,7 +150,7 @@ loki.process "journal" {
 // --- Write to Loki ---
 loki.write "loki" {
   endpoint {
-    url = "${LOKI_URL}"
+${ENDPOINT_BLOCK}
   }
 }
 ALLOYCONFIG
