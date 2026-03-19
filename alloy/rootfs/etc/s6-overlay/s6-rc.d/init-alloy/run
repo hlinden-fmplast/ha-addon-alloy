@@ -51,7 +51,7 @@ echo " Loki URL: ${LOKI_URL}"
 echo " Journal path: ${JOURNAL_PATH}"
 echo " Log level: ${LOG_LEVEL}"
 if [ "${HAS_TLS}" = true ]; then
-    echo " TLS: enabled (CA: ${TLS_CA_CERT:-none}, cert: ${TLS_CLIENT_CERT:-none})"
+    echo " TLS: enabled (CA: ${TLS_CA_CERT:-none}, cert: ${TLS_CLIENT_CERT:-none}, SNI: ${TLS_SERVER_NAME:-auto})"
 fi
 if [ "${HAS_BASIC_AUTH}" = true ]; then
     echo " Basic auth: enabled (user: ${BASIC_AUTH_USER})"
