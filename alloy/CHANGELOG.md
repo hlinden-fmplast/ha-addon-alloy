@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0 - 2026-03-19
+## 1.2.0 - 2026-03-19
 
 ### Added
 - mTLS client certificate support (`tls_ca_cert`, `tls_client_cert`, `tls_client_key`)
