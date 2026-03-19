@@ -19,6 +19,16 @@ TLS_CLIENT_CERT=$(jq -r '.tls_client_cert // ""' "${OPTIONS_FILE}")
 TLS_CLIENT_KEY=$(jq -r '.tls_client_key // ""' "${OPTIONS_FILE}")
 TLS_SERVER_NAME=$(jq -r '.tls_server_name // ""' "${OPTIONS_FILE}")
 
+# Apply extra_hosts entries to /etc/hosts
+EXTRA_HOSTS_COUNT=$(jq -r '.extra_hosts // [] | length' "${OPTIONS_FILE}")
+if [ "${EXTRA_HOSTS_COUNT}" -gt 0 ]; then
+    jq -r '.extra_hosts[]' "${OPTIONS_FILE}" | while IFS=: read -r hostname ip; do
+        if [ -n "${hostname}" ] && [ -n "${ip}" ]; then
+            echo "${ip} ${hostname}" >> /etc/hosts
+        fi
+    done
+fi
+
 # Detect journal path
 JOURNAL_PATH="/var/log/journal"
 if [ ! -d "${JOURNAL_PATH}" ] || [ -z "$(ls -A "${JOURNAL_PATH}" 2>/dev/null)" ]; then

@@ -24,6 +24,10 @@ For Loki endpoints secured with TLS or mutual TLS (client certificates). Certifi
 - **tls_client_key**: Client key filename (e.g., `client.key`). Required for mTLS.
 - **tls_server_name**: Override the server name for TLS verification and SNI. Use when connecting by IP address but the server certificate contains a hostname (e.g., `loki-ingest.example.com`).
 
+### DNS Overrides
+
+- **extra_hosts**: List of `hostname:ip` entries to add to the container's `/etc/hosts`. Use when the Loki hostname cannot be resolved via DNS (e.g., `.local` domains conflicting with mDNS).
+
 ### Basic Auth
 
 For Loki endpoints protected with HTTP basic authentication.
@@ -50,16 +54,17 @@ tls_client_cert: "client.crt"
 tls_client_key: "client.key"
 ```
 
-### Example: mTLS with IP address
+### Example: mTLS with DNS override
 
-When DNS cannot resolve the Loki hostname (e.g., `.local` domain conflicts with mDNS), connect by IP and use `tls_server_name` to set the expected hostname for TLS verification and SNI routing:
+When DNS cannot resolve the Loki hostname (e.g., `.local` domain conflicts with mDNS), use `extra_hosts` to add a static DNS entry:
 
 ```yaml
-loki_url: "https://192.168.1.45/loki/api/v1/push"
+loki_url: "https://loki-ingest.example.com/loki/api/v1/push"
 tls_ca_cert: "ca.crt"
 tls_client_cert: "client.crt"
 tls_client_key: "client.key"
-tls_server_name: "loki-ingest.example.com"
+extra_hosts:
+  - "loki-ingest.example.com:192.168.1.45"
 ```
 
 ### Example: Basic Auth
